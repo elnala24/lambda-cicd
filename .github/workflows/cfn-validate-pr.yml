@@ -45,6 +45,7 @@ jobs:
               body: `CloudFormation test stack deployed. Stack name: pr-test-stack-${{ github.event.pull_request.number}}`
             })
   cleanup-on-merge:
+    if: github.event.action == 'closed'
     runs-on: ubuntu-latest
     steps:
       - name: Install GitHub CLI and jq
