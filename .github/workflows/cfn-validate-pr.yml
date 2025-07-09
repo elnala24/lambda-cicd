@@ -45,8 +45,19 @@ jobs:
             })
   cleanup-on-merge:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
+    if: github.event.action == 'closed'
     steps:
+      - name: Check if PR was merged
+        id: check_merge
+        run: |
+          echo "merged=$(jq -r .pull_request.merged $GITHUB_EVENT_PATH)" >> $GITHUB_OUTPUT
+
+      - name: Exit if not merged
+        if: ${{ steps.check_merge.outputs.merged != 'true' }}
+        run: |
+          echo "PR not merged, skipping cleanup"
+          exit 0
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -57,4 +68,4 @@ jobs:
       - name: Delete Test Stack
         run: |
           stack_name="pr-test-stack-${{ github.event.pull_request.number }}"
-          aws cloudformation delete-stack --stack-name $stack_name 
+          aws cloudformation delete-stack --stack-name $stack_name
