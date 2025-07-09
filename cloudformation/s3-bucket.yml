@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'S3 bucket for with environment tagging'
+Description: 'S3 bucket with environment tagging'
 
 Parameters:
   Environment: 
@@ -20,7 +20,7 @@ Resources:
         - Key: Project
           Value: GithubActionsTesting
 
-  Outputs:
-    BucketName:
-      Description: 'Name of the created S3 bucket'
-      Value: !Ref MyS3Bucket
+Outputs:
+  BucketName:
+    Description: 'Name of the created S3 bucket'
+    Value: !Ref MyS3Bucket
