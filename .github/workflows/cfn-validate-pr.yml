@@ -47,15 +47,23 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.action == 'closed'
     steps:
+      - name: Install GitHub CLI
+        run: sudo apt install gh -y
+
       - name: Check if PR was merged
         id: check_merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "merged=$(jq -r .pull_request.merged $GITHUB_EVENT_PATH)" >> $GITHUB_OUTPUT
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO="${{ github.repository }}"
+          IS_MERGED=$(gh api repos/$REPO/pulls/$PR_NUMBER --jq '.merged')
+          echo "merged=$IS_MERGED" >> $GITHUB_OUTPUT
 
       - name: Exit if not merged
         if: ${{ steps.check_merge.outputs.merged != 'true' }}
         run: |
-          echo "PR not merged, skipping cleanup"
+          echo "PR was not merged. Skipping cleanup."
           exit 0
 
       - name: Configure AWS Credentials
