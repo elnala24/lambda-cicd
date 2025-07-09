@@ -45,25 +45,25 @@ jobs:
             })
   cleanup-on-merge:
     runs-on: ubuntu-latest
-    if: github.event.action == 'closed'
     steps:
-      - name: Install GitHub CLI
-        run: sudo apt install gh -y
+      - name: Install GitHub CLI and jq
+        run: sudo apt-get update && sudo apt-get install -y gh jq
 
-      - name: Check if PR was merged
+      - name: Check if PR was merged using GitHub API
         id: check_merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
+          PR_NUMBER=$(jq -r .number "$GITHUB_EVENT_PATH")
           REPO="${{ github.repository }}"
+          echo "Checking PR #$PR_NUMBER..."
           IS_MERGED=$(gh api repos/$REPO/pulls/$PR_NUMBER --jq '.merged')
           echo "merged=$IS_MERGED" >> $GITHUB_OUTPUT
 
-      - name: Exit if not merged
+      - name: Exit if PR was not merged
         if: ${{ steps.check_merge.outputs.merged != 'true' }}
         run: |
-          echo "PR was not merged. Skipping cleanup."
+          echo "PR was closed but not merged. Skipping cleanup."
           exit 0
 
       - name: Configure AWS Credentials
@@ -73,7 +73,8 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-1
 
-      - name: Delete Test Stack
+      - name: Delete CloudFormation Stack
         run: |
           stack_name="pr-test-stack-${{ github.event.pull_request.number }}"
+          echo "Deleting CloudFormation stack: $stack_name"
           aws cloudformation delete-stack --stack-name $stack_name
